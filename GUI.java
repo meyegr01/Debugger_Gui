@@ -1,18 +1,29 @@
 /*
-/* first implimentation of the Debugger gui, its design used the buttons lab, we did previous in class, as a base.
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
  */
 package gui;
 
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
+import java.util.Scanner;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import vm252architecture.VM252Architecture;
+import vm252utilities.VM252Utilities;
+
+
 
 /**
  *
  * @author vandja05
  */
 public class GUI {
-
     public static void main(String[] commandLineArguments) {
        EventQueue.invokeLater(
                ()->
@@ -126,10 +137,22 @@ class ProgramFrame extends JFrame
             programPanel().add(changeFile);
             //makes the panel visible
             add(programPanel());
+            
       //
       //Creates button action/implements the quit button
       quitAction close = new quitAction();
       Quit.addActionListener(close);
+      
+      FileChange path = new FileChange();
+      if (path.file_path() == null)
+        {
+            Scanner reader = new Scanner(System.in);
+                    System.out.println("Enter The full file directory: ");
+                    String file = reader.nextLine();
+                    path.ChangeAction(file);
+                    file_name.setText("..."+file.substring(file.length()-25));
+        }
+      changeFile.addActionListener(path);
     }
       private class quitAction implements ActionListener
     {
@@ -139,5 +162,36 @@ class ProgramFrame extends JFrame
                 System.exit(0);
             }        
     }
-    
+        private class FileChange implements ActionListener
+      {
+            private String file_path;
+            
+            private String file_path()
+                {
+                    return file_path;
+                }
+            private void setfile_path(String other)
+                {
+                    file_path = other;
+                }
+            public String ChangeAction(String other)
+                {
+                    setfile_path(other);
+                    return file_path();
+                }
+            @Override
+            public void actionPerformed(ActionEvent event)
+                {
+                    Scanner reader = new Scanner(System.in);
+                    System.out.println("Enter The full file directory: ");
+                    String file = reader.nextLine();
+                    ChangeAction(file);
+                    //figure out how to change the text of the label from here
+                    //not really sure how
+                    
+                    //following comment is what you would do to run the following thing
+                    //byte [] program = VM252Utilities.readObjectCodeFromObjectFile(file_path());
+                    //VM252Architecture.runProgram(program);
+                }  
+      }
 }
