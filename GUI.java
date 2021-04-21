@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package gui;
 
 import java.awt.*;
@@ -16,8 +11,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import vm252architecture.VM252Architecture;
 import vm252utilities.VM252Utilities;
-
-
 
 /**
  *
@@ -39,11 +32,11 @@ public class GUI {
 }
 class ProgramFrame extends JFrame
 {
-
     private static final int OUR_DEFAULT_WIDTH = 400;
     private static final int OUR_DEFAULT_HEIGHT = 400;
 
     private JPanel myProgramPanel;
+    public String filepath;
 
     private JPanel programPanel()
     {
@@ -58,14 +51,13 @@ class ProgramFrame extends JFrame
         myProgramPanel = other;
 
         }
-
+    
     public ProgramFrame()
     {
 
         setTitle("Debugger GUI");
         setSize(OUR_DEFAULT_WIDTH, OUR_DEFAULT_HEIGHT);
-        
-//
+        //
         // Create buttons
         //
         //first line buttons
@@ -109,7 +101,7 @@ class ProgramFrame extends JFrame
         //Add the change file button
             JButton changeFile = new JButton("Change the current file");
             changeFile.setBounds(100,300, 185, 30);
-
+            
         //
         // Create panel to hold all components
         //
@@ -142,17 +134,18 @@ class ProgramFrame extends JFrame
       //Creates button action/implements the quit button
       quitAction close = new quitAction();
       Quit.addActionListener(close);
-      
       FileChange path = new FileChange();
       if (path.file_path() == null)
         {
-            Scanner reader = new Scanner(System.in);
-                    System.out.println("Enter The full file directory: ");
-                    String file = reader.nextLine();
-                    path.ChangeAction(file);
-                    file_name.setText("..."+file.substring(file.length()-25));
+            String file = window("Please enter a full file path");
+            path.ChangeAction(file);
+            file_name.setText("..."+file.substring(file.length()-25));
+            path(file);
         }
       changeFile.addActionListener(path);
+      
+      sAction instruction = new sAction();
+      S.addActionListener(instruction);
     }
       private class quitAction implements ActionListener
     {
@@ -162,36 +155,74 @@ class ProgramFrame extends JFrame
                 System.exit(0);
             }        
     }
-        private class FileChange implements ActionListener
-      {
-            private String file_path;
+      private class FileChange implements ActionListener
+    {
+        private String file_path;
             
-            private String file_path()
-                {
-                    return file_path;
-                }
-            private void setfile_path(String other)
-                {
-                    file_path = other;
-                }
-            public String ChangeAction(String other)
-                {
-                    setfile_path(other);
-                    return file_path();
-                }
-            @Override
-            public void actionPerformed(ActionEvent event)
-                {
-                    Scanner reader = new Scanner(System.in);
-                    System.out.println("Enter The full file directory: ");
-                    String file = reader.nextLine();
-                    ChangeAction(file);
-                    //figure out how to change the text of the label from here
-                    //not really sure how
-                    
-                    //following comment is what you would do to run the following thing
-                    //byte [] program = VM252Utilities.readObjectCodeFromObjectFile(file_path());
-                    //VM252Architecture.runProgram(program);
-                }  
+        private String file_path()
+            {
+                return file_path;
+            }
+        private void setfile_path(String other)
+            {
+                file_path = other;
+            }
+        public String ChangeAction(String other)
+            {
+                setfile_path(other);
+                return file_path();
+            }
+        @Override
+        public void actionPerformed(ActionEvent event)
+            {
+                String file = window("Please enter a full file path");
+                System.out.println(file);       
+                ChangeAction(file);
+                //figure out how to change the text of the label from here
+                //not really sure how to do that
+//.file_name.setText("..."+file.substring(file.length()-25));
+
+                //following comment is what you would do to run the following thing
+                //byte [] program = VM252Utilities.readObjectCodeFromObjectFile(file_path());
+                //VM252Architecture.runProgram(program);
+            }
       }
-}
+      public String window(String question)
+        {
+            String input;
+            input = JOptionPane.showInputDialog(question);
+            return input;
+        }
+      public void path(String path)
+        {
+            path2file = path;
+        }
+      public String path2file;
+      
+    private class sAction implements ActionListener
+      {
+        private byte[] program;
+        public byte[] getProgram()
+        {
+            return program;
+        }
+        public void setProgram()
+        {
+            program = VM252Utilities.readObjectCodeFromObjectFile(path2file);
+        }
+        public short accumulator = 2;
+        public short programCounter = 1;
+        
+        
+            @Override
+        public void actionPerformed(ActionEvent event)
+            {
+                setProgram();
+                System.out.println("ACC = "+accumulator);
+                System.out.println("PC = "+programCounter);
+                System.out.print("Next Instruction - "+getProgram()[programCounter]);
+            }       
+            }
+      }
+
+
