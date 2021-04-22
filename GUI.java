@@ -10,6 +10,7 @@ import java.io.FileNotFoundException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import vm252architecture.VM252Architecture;
+import static vm252architecture.VM252Architecture.numberOfMemoryBytes;
 import vm252utilities.VM252Utilities;
 
 /**
@@ -146,7 +147,23 @@ class ProgramFrame extends JFrame
       
       sAction instruction = new sAction();
       S.addActionListener(instruction);
+      
+      zAction thing = new zAction();
+      Z.addActionListener(thing);
+      
+      nAction next = new nAction();
+      N.addActionListener(next);
+      
+      
+      
+      byte [] program = VM252Utilities.readObjectCodeFromObjectFile(path.file_path());
+      setUpProgram(program);
     }
+    public short accumulator = 0;
+    public short programCounter = 0;
+    public int opcode;
+    public static final int numberOfMemoryBytes = 8192; 
+    
       private class quitAction implements ActionListener
     {
         @Override
@@ -155,6 +172,15 @@ class ProgramFrame extends JFrame
                 System.exit(0);
             }        
     }
+      private class zAction implements ActionListener
+      {
+          
+          @Override
+          public void actionPerformed(ActionEvent Event)
+            {
+                programCounter = 0;
+            }
+      }
       private class FileChange implements ActionListener
     {
         private String file_path;
@@ -193,12 +219,21 @@ class ProgramFrame extends JFrame
             input = JOptionPane.showInputDialog(question);
             return input;
         }
+      public int intInput(String question)
+        {
+            int input;
+            input = Integer.parseInt(JOptionPane.showInputDialog(question));
+            return input;
+        }
       public void path(String path)
         {
             path2file = path;
         }
       public String path2file;
-      
+    private class ReadFile
+        {
+        
+        }
     private class sAction implements ActionListener
       {
         private byte[] program;
@@ -210,19 +245,160 @@ class ProgramFrame extends JFrame
         {
             program = VM252Utilities.readObjectCodeFromObjectFile(path2file);
         }
-        public short accumulator = 2;
-        public short programCounter = 1;
-        
-        
+  
             @Override
         public void actionPerformed(ActionEvent event)
             {
                 setProgram();
                 System.out.println("ACC = "+accumulator);
                 System.out.println("PC = "+programCounter);
-                System.out.print("Next Instruction - "+getProgram()[programCounter]);
-            }       
+                System.out.print("Next Instruction - ");
+                byte [] encodedInstruction
+                                = fetchBytePair(memory, programCounter);
+
+                            int [] decodedInstruction
+                                = VM252Utilities.decodedInstruction(encodedInstruction);
+                             opcode = decodedInstruction[ 0 ];
+                            
+                            short operand
+                                = decodedInstruction.length == 2
+                                    ? ((short) (decodedInstruction[ 1 ]))
+                                    : 0;
+                            switch (opcode)
+                            {
+                                case VM252Utilities.INPUT_OPCODE-> {
+                                    System.out.println("INPUT");
+                                }
+                                case VM252Utilities.LOAD_OPCODE-> {
+                                    System.out.println("LOAD");
+                                    System.out.println(operand);
+                                }
+                                case VM252Utilities.SET_OPCODE-> {
+                                    System.out.println("SET");
+                                    System.out.println(operand);
+                                }
+                                case VM252Utilities.STORE_OPCODE -> {
+                                    //add the word next to it that it is beign stored to
+                                    System.out.println("STORE");
+                                    System.out.println(operand);
+                                }
+                                case VM252Utilities.ADD_OPCODE-> {
+                                    System.out.println("ADD");
+                                }
+                                case VM252Utilities.SUBTRACT_OPCODE-> {
+                                    System.out.println("SUB");
+                                }
+                                case VM252Utilities.JUMP_OPCODE-> {
+                                    System.out.println("JUMP");
+                                    System.out.println(operand);
+                                }
+                                case VM252Utilities.JUMP_ON_ZERO_OPCODE-> {
+                                    System.out.println("JUMP ON ZERO");
+                                    System.out.println(operand);
+                                }
+                                case VM252Utilities.JUMP_ON_POSITIVE_OPCODE-> {
+                                    System.out.println("JUMP ON POS");
+                                    System.out.println(operand);
+                                }
+                                case VM252Utilities.OUTPUT_OPCODE-> {
+                                    System.out.println("OUTPUT");
+                                }
+                                case VM252Utilities.NO_OP_OPCODE-> {
+                                    System.out.println("NOOP");
+                                }
+                                case VM252Utilities.STOP_OPCODE-> {
+                                    System.out.println("STOP");
+                                }
+                            }
             }
+        
+        }
+    private static short nextMemoryAddress(short address)
+        {
+
+            return ((short) ((address + 1) % numberOfMemoryBytes));
+
+            }
+    private static byte [] fetchBytePair(byte [] memory, short address)
+        {
+
+            byte [] bytePair = { memory[ address ], memory[ nextMemoryAddress(address) ] };
+
+            return bytePair;
+
+            }
+     private static short bytesToInteger(
+            byte mostSignificantByte,
+            byte leastSignificantByte
+            )
+        {
+
+            return
+                ((short)
+                    ((mostSignificantByte << 8 & 0xff00 | leastSignificantByte & 0xff)));
+
+            }
+     public byte[] memory;
+        public void setUpProgram(byte[] program)
+        {
+            
+            
+            if (program != null)
+            {
+              memory = new byte[numberOfMemoryBytes];
+            for (int loadAddress = 0; loadAddress < program.length; ++ loadAddress)
+                            
+                        memory[ loadAddress ] = program[ loadAddress ];
+
+            for (int loadAddress = program.length;
+                    loadAddress < numberOfMemoryBytes;
+                    ++ loadAddress)
+                    
+                memory[ loadAddress ] = 0;
+            
+        }
+        }
+        private static int instructionSize(int opcode)
+        {
+
+            switch (opcode) {
+
+                case VM252Utilities.LOAD_OPCODE,
+                    VM252Utilities.SET_OPCODE,
+                    VM252Utilities.STORE_OPCODE,
+                    VM252Utilities.ADD_OPCODE,
+                    VM252Utilities.SUBTRACT_OPCODE,
+                    VM252Utilities.JUMP_OPCODE,
+                    VM252Utilities.JUMP_ON_ZERO_OPCODE,
+                    VM252Utilities.JUMP_ON_POSITIVE_OPCODE -> {
+
+                    return 2;
+
+                    }
+
+                default -> {
+
+                    return 1;
+
+                    }
+
+                }
+
+            }
+
+       private class nAction implements ActionListener
+      {
+            @Override
+        public void actionPerformed(ActionEvent event)
+            {
+                programCounter
+                                    = ((short)
+                                        ((programCounter + instructionSize(opcode))
+                                            % numberOfMemoryBytes)
+                                            );
+            }
+            
       }
+}
 
 
