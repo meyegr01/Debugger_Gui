@@ -154,6 +154,9 @@ class ProgramFrame extends JFrame
       nAction next = new nAction();
       N.addActionListener(next);
       
+      AaAction setaccum = new AaAction();
+      Aa.addActionListener(setaccum);
+      
       
       
       byte [] program = VM252Utilities.readObjectCodeFromObjectFile(path.file_path());
@@ -230,10 +233,6 @@ class ProgramFrame extends JFrame
             path2file = path;
         }
       public String path2file;
-    private class ReadFile
-        {
-        
-        }
     private class sAction implements ActionListener
       {
         private byte[] program;
@@ -396,6 +395,16 @@ class ProgramFrame extends JFrame
                                         ((programCounter + instructionSize(opcode))
                                             % numberOfMemoryBytes)
                                             );
+            }
+            
+      }
+      private class AaAction implements ActionListener
+      {
+            @Override
+        public void actionPerformed(ActionEvent event)
+            {
+                accumulator = ((short)intInput("What do you want to set the accumulator to"));
+                System.out.println(accumulator);
             }
             
       }
