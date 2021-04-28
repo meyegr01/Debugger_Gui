@@ -157,6 +157,8 @@ class ProgramFrame extends JFrame
       AaAction setaccum = new AaAction();
       Aa.addActionListener(setaccum);
       
+      ApAction setprogcounter = new ApAction();
+      Ap.addActionListener(setprogcounter);
       
       
       byte [] program = VM252Utilities.readObjectCodeFromObjectFile(path.file_path());
@@ -165,7 +167,7 @@ class ProgramFrame extends JFrame
     public short accumulator = 0;
     public short programCounter = 0;
     public int opcode;
-    public static final int numberOfMemoryBytes = 8192; 
+    public static final int numberOfMemoryBytes = 8192;
     
       private class quitAction implements ActionListener
     {
@@ -260,7 +262,7 @@ class ProgramFrame extends JFrame
                              opcode = decodedInstruction[ 0 ];
                             
                             short operand
-                                = decodedInstruction.length == 2
+                               = decodedInstruction.length == 2
                                     ? ((short) (decodedInstruction[ 1 ]))
                                     : 0;
                             switch (opcode)
@@ -310,8 +312,8 @@ class ProgramFrame extends JFrame
                                 }
                             }
             }
-        
         }
+    
     private static short nextMemoryAddress(short address)
         {
 
@@ -403,10 +405,18 @@ class ProgramFrame extends JFrame
             @Override
         public void actionPerformed(ActionEvent event)
             {
-                accumulator = ((short)intInput("What do you want to set the accumulator to"));
+                accumulator = ((short) intInput("What do you want to set the accumulator to"));
                 System.out.println(accumulator);
             }
-            
+      }
+      private class ApAction implements ActionListener
+      {
+      @Override
+        public void actionPerformed(ActionEvent event)
+            {
+                programCounter = ((short) intInput("What do you want to set the accumulator to"));
+                System.out.println(programCounter);
+            }
       }
 }
 
