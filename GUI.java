@@ -28,9 +28,8 @@ public class GUI {
                     frame.setVisible(true);
                     }
        ); 
-    }
-    
-}
+    }    
+} 
 class ProgramFrame extends JFrame
 {
     private static final int OUR_DEFAULT_WIDTH = 400;
@@ -52,7 +51,8 @@ class ProgramFrame extends JFrame
         myProgramPanel = other;
 
         }
-    
+    public JLabel text;
+    public ProgramFrame pf;
     public ProgramFrame()
     {
 
@@ -98,6 +98,7 @@ class ProgramFrame extends JFrame
            JLabel file_label = new JLabel("File: ");
            file_label.setBounds(100,275,90,30);
            JLabel file_name = new JLabel("No File currently selected");
+           text = file_name;
            file_name.setBounds(125,275,200,30);
         //Add the change file button
             JButton changeFile = new JButton("Change the current file");
@@ -160,13 +161,17 @@ class ProgramFrame extends JFrame
       ApAction setprogcounter = new ApAction();
       Ap.addActionListener(setprogcounter);
       
+      MbAction testing = new MbAction();
+      Mb.addActionListener(testing);
       
-      byte [] program = VM252Utilities.readObjectCodeFromObjectFile(path.file_path());
+      program = VM252Utilities.readObjectCodeFromObjectFile(path.file_path());
       setUpProgram(program);
     }
+    public byte[] program;
     public short accumulator = 0;
     public short programCounter = 0;
     public int opcode;
+    public short operand;
     public static final int numberOfMemoryBytes = 8192;
     
       private class quitAction implements ActionListener
@@ -204,18 +209,17 @@ class ProgramFrame extends JFrame
                 return file_path();
             }
         @Override
+        //something hinky is happening here, something about the path to file isn't acutally being changed
         public void actionPerformed(ActionEvent event)
             {
                 String file = window("Please enter a full file path");
-                System.out.println(file);       
-                ChangeAction(file);
-                //figure out how to change the text of the label from here
-                //not really sure how to do that
-//.file_name.setText("..."+file.substring(file.length()-25));
-
-                //following comment is what you would do to run the following thing
-                //byte [] program = VM252Utilities.readObjectCodeFromObjectFile(file_path());
-                //VM252Architecture.runProgram(program);
+                //System.out.println(file);
+                path(file);
+                program = VM252Utilities.readObjectCodeFromObjectFile(path2file);
+                setUpProgram(program);
+                text.setText("..."+file.substring(file.length()-25));
+                accumulator = 0;
+                programCounter = 0;    
             }
       }
       public String window(String question)
@@ -235,16 +239,21 @@ class ProgramFrame extends JFrame
             path2file = path;
         }
       public String path2file;
+      //look into how to match the output exactly. it works okay, and functionally but It needs to be looked at more. 
     private class sAction implements ActionListener
       {
         private byte[] program;
+        
         public byte[] getProgram()
         {
             return program;
         }
         public void setProgram()
         {
+            System.out.println(path2file);
             program = VM252Utilities.readObjectCodeFromObjectFile(path2file);
+            setUpProgram(program);
+            
         }
   
             @Override
@@ -261,7 +270,7 @@ class ProgramFrame extends JFrame
                                 = VM252Utilities.decodedInstruction(encodedInstruction);
                              opcode = decodedInstruction[ 0 ];
                             
-                            short operand
+                             operand
                                = decodedInstruction.length == 2
                                     ? ((short) (decodedInstruction[ 1 ]))
                                     : 0;
@@ -342,6 +351,7 @@ class ProgramFrame extends JFrame
      public byte[] memory;
         public void setUpProgram(byte[] program)
         {
+            memory = null;
             
             
             if (program != null)
@@ -418,6 +428,41 @@ class ProgramFrame extends JFrame
                 System.out.println(programCounter);
             }
       }
+      private class MbAction implements ActionListener
+      {
+          @Override
+          public void actionPerformed(ActionEvent event)
+          {
+              System.out.println(vm252utilities.VM252Utilities.encodedInstruction(opcode,operand));
+              outPutFrame();
+          
+          }
+      }
+      public void outPutFrame()
+      {
+              PopupFactory popup = new PopupFactory();
+              JLabel thing = new JLabel("This is a popup menu");
+              f.setSize(400,400);
+              JButton close_window = new JButton("close Window");
+              JPanel panel = new JPanel();
+              panel.add(thing);
+              panel.add(close_window);
+              Popup po = popup.getPopup(f, panel, 400, 400);
+              f.setVisible(true);
+              f.add(panel);
+              close_Window testing = new close_Window();
+              close_window.addActionListener(testing); 
+      }
+      public JFrame f = new JFrame();
+          private class close_Window implements ActionListener
+      {
+          @Override
+          public void actionPerformed(ActionEvent event)
+          {
+              f.setVisible(false);
+          }
+      }
 }
+
 
 
