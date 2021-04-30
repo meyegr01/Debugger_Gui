@@ -164,9 +164,14 @@ class ProgramFrame extends JFrame
       MbAction testing = new MbAction();
       Mb.addActionListener(testing);
       
+      runAction run = new runAction();
+      R.addActionListener(run);
+      
       program = VM252Utilities.readObjectCodeFromObjectFile(path.file_path());
       setUpProgram(program);
     }
+    public boolean lastInstructionCausedHalt;                         
+    public boolean suppressPcIncrement;
     public byte[] program;
     public short accumulator = 0;
     public short programCounter = 0;
@@ -212,6 +217,7 @@ class ProgramFrame extends JFrame
         //something hinky is happening here, something about the path to file isn't acutally being changed
         public void actionPerformed(ActionEvent event)
             {
+                ////Change to File-chooser 
                 String file = window("Please enter a full file path");
                 //System.out.println(file);
                 path(file);
@@ -397,19 +403,181 @@ class ProgramFrame extends JFrame
 
             }
 
-       private class nAction implements ActionListener
+      
+            private class nAction implements ActionListener
       {
+                   private void storeIntegerValue(
+ 
+            
+            short address,
+            short dataValue
+            )
+        {
+
+            byte [] dataBytes = integerToBytes(dataValue);
+
+            memory[ address ] = dataBytes[ 0 ];
+            memory[ nextMemoryAddress(address) ] = dataBytes[ 1 ];
+
+            }
+        private short fetchIntegerValue(short address)
+        {
+
+            byte [] integerBytes = fetchBytePair(memory, address);
+
+            return bytesToInteger(integerBytes[ 0 ], integerBytes[ 1 ]);
+
+            }
             @Override
         public void actionPerformed(ActionEvent event)
             {
+
                 programCounter
                                     = ((short)
                                         ((programCounter + instructionSize(opcode))
                                             % numberOfMemoryBytes)
                                             );
+                                            byte [] encodedInstruction
+                                = fetchBytePair(memory, programCounter);
+
+                            int [] decodedInstruction
+                                = VM252Utilities.decodedInstruction(encodedInstruction);
+                            int opcode = decodedInstruction[ 0 ];
+
+                            short operand
+                                = decodedInstruction.length == 2
+                                    ? ((short) (decodedInstruction[ 1 ]))
+                                    : 0;
+                                switch (opcode) {
+
+                                case VM252Utilities.LOAD_OPCODE -> {
+
+                                    accumulator = fetchIntegerValue(memory, operand);
+
+                                    }
+
+                                case VM252Utilities.SET_OPCODE -> {
+
+                                    accumulator = operand;
+
+                                    }
+
+                                case VM252Utilities.STORE_OPCODE -> {
+
+                                    storeIntegerValue(memory, operand, accumulator);
+
+                                    }
+
+                                case VM252Utilities.ADD_OPCODE -> {
+
+                                    accumulator += fetchIntegerValue(memory, operand);
+
+                                    }
+
+                                case VM252Utilities.SUBTRACT_OPCODE -> {
+
+                                    accumulator -= fetchIntegerValue(memory, operand);
+
+                                    }
+
+                                case VM252Utilities.JUMP_OPCODE -> {
+
+                                    programCounter = operand;
+                                    suppressPcIncrement = true;
+
+                                    }
+
+                                case VM252Utilities.JUMP_ON_ZERO_OPCODE -> {
+
+                                    if (accumulator == 0) {
+                                        programCounter = operand;
+                                        suppressPcIncrement = true;
+                                        }
+
+                                    }
+
+                                case VM252Utilities.JUMP_ON_POSITIVE_OPCODE -> {
+
+                                    if (accumulator > 0) {
+                                        programCounter = operand;
+                                        suppressPcIncrement = true;
+                                        }
+
+                                    }
+                               //not sure what the input. is just cant' find it when trying to compile the 
+                             /*  case VM252Utilities.INPUT_OPCODE -> {
+                                    for (System.out.print("INPUT: "), System.out.flush();
+                                                input.hasNext() && ! input.hasNextInt();
+                                                System.out.print("INPUT: "),
+                                                    System.out.flush())
+                                        
+                                            input.next();
+                                            System.out.println(
+                                                "INPUT: Bad integer value; try again"
+                                                );
+                                            System.out.flush();
+                                            
+
+                                        lastInstructionCausedHalt = ! input.hasNext();
+                                
+
+                                        if (lastInstructionCausedHalt) {
+
+                                            System.out.println(
+                                                "EOF reading input;  machine halts"
+                                                );
+                                            System.out.flush();
+
+                                            suppressPcIncrement = true;
+
+                                            }
+
+                    
+
+                               }*/
+
+                                case VM252Utilities.OUTPUT_OPCODE -> {
+
+                                    System.out.println("OUTPUT: " + accumulator);
+                                    System.out.flush();
+
+                                    }
+
+                                case VM252Utilities.NO_OP_OPCODE -> {
+
+                                    ; // do nothing
+
+                                    }
+
+                                case VM252Utilities.STOP_OPCODE -> {
+
+                                    lastInstructionCausedHalt = true;
+                                    suppressPcIncrement = true;
+
+
+                }
+
             }
+
+    
+            }
+
+        private byte[] integerToBytes(short dataValue) {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        private short fetchIntegerValue(byte[] memory, short operand) {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        private void storeIntegerValue(byte[] memory, short operand, short accumulator) {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
             
       }
+            
+      
+        
       private class AaAction implements ActionListener
       {
             @Override
@@ -437,6 +605,15 @@ class ProgramFrame extends JFrame
               outPutFrame();
           
           }
+      }
+      private class runAction implements ActionListener
+      {
+           @Override
+           public void actionPerformed(ActionEvent event)
+           {
+               VM252Architecture.runProgram(program);
+           }
+      
       }
       public void outPutFrame()
       {
