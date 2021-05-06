@@ -139,10 +139,11 @@ class ProgramFrame extends JFrame
       FileChange path = new FileChange();
       if (path.file_path() == null)
         {
-            String file = window("Please enter a full file path");
-            path.ChangeAction(file);
-            file_name.setText("..."+file.substring(file.length()-25));
-            path(file);
+            JFileChooser startup = new JFileChooser();
+            startup.showSaveDialog(null);
+            path.ChangeAction(startup.getSelectedFile().getAbsolutePath());
+            file_name.setText(startup.getSelectedFile().getName());
+            path(startup.getSelectedFile().getAbsolutePath());
         }
       changeFile.addActionListener(path);
       
@@ -169,6 +170,7 @@ class ProgramFrame extends JFrame
       
       program = VM252Utilities.readObjectCodeFromObjectFile(path.file_path());
       setUpProgram(program);
+      outPutFrame();
     }
     public boolean lastInstructionCausedHalt;                         
     public boolean suppressPcIncrement;
@@ -178,7 +180,7 @@ class ProgramFrame extends JFrame
     public int opcode;
     public short operand;
     public static final int numberOfMemoryBytes = 8192;
-    
+    public JTextArea textArea = new JTextArea();    
       private class quitAction implements ActionListener
     {
         @Override
@@ -217,23 +219,17 @@ class ProgramFrame extends JFrame
         //something hinky is happening here, something about the path to file isn't acutally being changed
         public void actionPerformed(ActionEvent event)
             {
-                ////Change to File-chooser 
-                String file = window("Please enter a full file path");
-                //System.out.println(file);
-                path(file);
+                JFileChooser chooser = new JFileChooser();
+                chooser.showSaveDialog(null);
+                path(chooser.getSelectedFile().getAbsolutePath());
                 program = VM252Utilities.readObjectCodeFromObjectFile(path2file);
                 setUpProgram(program);
-                text.setText("..."+file.substring(file.length()-25));
+                text.setText(chooser.getSelectedFile().getName());
                 accumulator = 0;
-                programCounter = 0;    
+                programCounter = 0;
+                textArea.setText("");
             }
       }
-      public String window(String question)
-        {
-            String input;
-            input = JOptionPane.showInputDialog(question);
-            return input;
-        }
       public int intInput(String question)
         {
             int input;
@@ -256,7 +252,6 @@ class ProgramFrame extends JFrame
         }
         public void setProgram()
         {
-            System.out.println(path2file);
             program = VM252Utilities.readObjectCodeFromObjectFile(path2file);
             setUpProgram(program);
             
@@ -266,15 +261,15 @@ class ProgramFrame extends JFrame
         public void actionPerformed(ActionEvent event)
             {
                 setProgram();
-                System.out.println("ACC = "+accumulator);
-                System.out.println("PC = "+programCounter);
-                System.out.print("Next Instruction - ");
+                textArea.append("\nACC = "+accumulator);
+                textArea.append("\nPC = "+programCounter);
+                textArea.append("\nNext Instruction - ");
                 byte [] encodedInstruction
                                 = fetchBytePair(memory, programCounter);
 
                             int [] decodedInstruction
                                 = VM252Utilities.decodedInstruction(encodedInstruction);
-                             opcode = decodedInstruction[ 0 ];
+                              opcode = decodedInstruction[ 0 ];
                             
                              operand
                                = decodedInstruction.length == 2
@@ -283,47 +278,47 @@ class ProgramFrame extends JFrame
                             switch (opcode)
                             {
                                 case VM252Utilities.INPUT_OPCODE-> {
-                                    System.out.println("INPUT");
+                                    textArea.append("INPUT");
                                 }
                                 case VM252Utilities.LOAD_OPCODE-> {
-                                    System.out.println("LOAD");
-                                    System.out.println(operand);
+                                    textArea.append("LOAD ");
+                                    textArea.append(String.valueOf(operand));
                                 }
                                 case VM252Utilities.SET_OPCODE-> {
-                                    System.out.println("SET");
-                                    System.out.println(operand);
+                                    textArea.append("SET");
+                                    textArea.append(String.valueOf(operand));
                                 }
                                 case VM252Utilities.STORE_OPCODE -> {
                                     //add the word next to it that it is beign stored to
-                                    System.out.println("STORE");
-                                    System.out.println(operand);
+                                    textArea.append("STORE");
+                                    textArea.append(String.valueOf(operand));
                                 }
                                 case VM252Utilities.ADD_OPCODE-> {
-                                    System.out.println("ADD");
+                                    textArea.append("ADD");
                                 }
                                 case VM252Utilities.SUBTRACT_OPCODE-> {
-                                    System.out.println("SUB");
+                                    textArea.append("SUB");
                                 }
                                 case VM252Utilities.JUMP_OPCODE-> {
-                                    System.out.println("JUMP");
-                                    System.out.println(operand);
+                                    textArea.append("JUMP");
+                                    textArea.append(String.valueOf(operand));
                                 }
                                 case VM252Utilities.JUMP_ON_ZERO_OPCODE-> {
-                                    System.out.println("JUMP ON ZERO");
-                                    System.out.println(operand);
+                                    textArea.append("JUMP ON ZERO");
+                                    textArea.append(String.valueOf(operand));
                                 }
                                 case VM252Utilities.JUMP_ON_POSITIVE_OPCODE-> {
-                                    System.out.println("JUMP ON POS");
-                                    System.out.println(operand);
+                                    textArea.append("JUMP ON POS");
+                                    textArea.append(String.valueOf(operand));
                                 }
                                 case VM252Utilities.OUTPUT_OPCODE-> {
-                                    System.out.println("OUTPUT");
+                                    textArea.append("OUTPUT");
                                 }
                                 case VM252Utilities.NO_OP_OPCODE-> {
-                                    System.out.println("NOOP");
+                                    textArea.append("NOOP");
                                 }
                                 case VM252Utilities.STOP_OPCODE-> {
-                                    System.out.println("STOP");
+                                    textArea.append("STOP");
                                 }
                             }
             }
@@ -401,43 +396,13 @@ class ProgramFrame extends JFrame
 
                 }
 
-            }
-
-      
+        }
             private class nAction implements ActionListener
       {
-                   private void storeIntegerValue(
- 
-            
-            short address,
-            short dataValue
-            )
-        {
-
-            byte [] dataBytes = integerToBytes(dataValue);
-
-            memory[ address ] = dataBytes[ 0 ];
-            memory[ nextMemoryAddress(address) ] = dataBytes[ 1 ];
-
-            }
-        private short fetchIntegerValue(short address)
-        {
-
-            byte [] integerBytes = fetchBytePair(memory, address);
-
-            return bytesToInteger(integerBytes[ 0 ], integerBytes[ 1 ]);
-
-            }
             @Override
         public void actionPerformed(ActionEvent event)
             {
-
-                programCounter
-                                    = ((short)
-                                        ((programCounter + instructionSize(opcode))
-                                            % numberOfMemoryBytes)
-                                            );
-                                            byte [] encodedInstruction
+                  byte [] encodedInstruction
                                 = fetchBytePair(memory, programCounter);
 
                             int [] decodedInstruction
@@ -449,6 +414,293 @@ class ProgramFrame extends JFrame
                                     ? ((short) (decodedInstruction[ 1 ]))
                                     : 0;
                                 switch (opcode) {
+                                case VM252Utilities.LOAD_OPCODE -> {
+                                    accumulator = fetchIntegerValue(memory, operand);
+                                    }
+                                case VM252Utilities.SET_OPCODE -> {
+                                    accumulator = operand;
+                                    }
+                                case VM252Utilities.STORE_OPCODE -> {
+                                    storeIntegerValue(memory, operand, accumulator);
+                                    }
+                                case VM252Utilities.ADD_OPCODE -> {
+                                    accumulator += fetchIntegerValue(memory, operand);
+                                    }
+                                case VM252Utilities.SUBTRACT_OPCODE -> {
+                                    accumulator -= fetchIntegerValue(memory, operand);
+                                    }
+                                case VM252Utilities.JUMP_OPCODE -> {
+                                    programCounter = operand;
+                                    suppressPcIncrement = true;
+                                    }
+                                case VM252Utilities.JUMP_ON_ZERO_OPCODE -> {
+                                    if (accumulator == 0) {
+                                        programCounter = operand;
+                                        suppressPcIncrement = true;
+                                        }
+                                    }
+                                case VM252Utilities.JUMP_ON_POSITIVE_OPCODE -> {
+
+                                    if (accumulator > 0) {
+                                        programCounter = operand;
+                                        suppressPcIncrement = true;
+                                        }
+                                    }
+                               case VM252Utilities.INPUT_OPCODE -> {
+                                    int input_value =  intInput("Input an integer Value");
+                                        lastInstructionCausedHalt = false;
+                                        if (lastInstructionCausedHalt) {
+
+                                            textArea.append(
+                                                "EOF reading input;  machine halts"
+                                                );
+                                            System.out.flush();
+
+                                            suppressPcIncrement = true;
+
+                                            }
+                                    //
+                                    // Otherwise let accumulator = the next integer read
+                                    //     from the standard input stream
+                                    //
+                                        else{
+
+                                            accumulator = ((short) input_value);
+                                            textArea.append("INPUT: "+accumulator+"\n");
+                                        }
+                               }
+
+                                case VM252Utilities.OUTPUT_OPCODE -> {
+
+                                    textArea.append("OUTPUT: " + accumulator+"\n");
+                                    System.out.flush();
+
+                                    }
+
+                                case VM252Utilities.NO_OP_OPCODE -> {
+
+                                    ; // do nothing
+
+                                    }
+
+                                case VM252Utilities.STOP_OPCODE -> {
+
+                                    lastInstructionCausedHalt = true;
+                                    suppressPcIncrement = true;
+
+
+                }
+
+            }
+                                programCounter
+                                    = ((short)
+                                        ((programCounter + instructionSize(opcode))
+                                            % numberOfMemoryBytes)
+                                            );
+
+    
+            }
+
+        private byte[] integerToBytes(short dataValue) {
+            byte [] dataBytes
+                = {((byte) (dataValue >> 8 & 0xff)),
+                    ((byte) (dataValue & 0xff))
+                    };
+
+            return dataBytes;
+        }
+
+        private short fetchIntegerValue(byte[] memory, short address) {
+            byte [] integerBytes = fetchBytePair(memory, address);
+
+            return bytesToInteger(integerBytes[ 0 ], integerBytes[ 1 ]);
+        }
+
+        private void storeIntegerValue(byte[] memory, short address, short dataValue ) {
+            
+        
+            byte [] dataBytes = integerToBytes(dataValue);
+
+            memory[ address ] = dataBytes[ 0 ];
+            memory[ nextMemoryAddress(address) ] = dataBytes[ 1 ];
+      }
+            }
+            
+      
+        
+      private class AaAction implements ActionListener
+      {
+            @Override
+        public void actionPerformed(ActionEvent event)
+            {
+                accumulator = ((short) intInput("What do you want to set the accumulator to"));
+                System.out.println(accumulator);
+            }
+      }
+      private class ApAction implements ActionListener
+      {
+      @Override
+        public void actionPerformed(ActionEvent event)
+            {
+                programCounter = ((short) intInput("What do you want to set the accumulator to"));
+                System.out.println(programCounter);
+            }
+      }
+      private class MbAction implements ActionListener
+      {
+          @Override
+          public void actionPerformed(ActionEvent event)
+          {
+              int counter = 0;
+              for(int j =0;j< memory.length;++j)
+              {
+                  if (counter%20==0)
+                  {
+                      if (counter == 0)
+                        {
+                            textArea.append("\n [ADDR       "+counter+"]");
+                        }
+                      else if (counter <100)
+                      {
+                      textArea.append("\n [ADDR     "+counter+"]");
+                      }
+                      else
+                      {
+                        textArea.append("\n [ADDR   "+counter+"]");
+                      }
+                  }
+                  
+                  var thing = (Integer.toHexString(memory[j]));
+                  if(thing.length()>1)
+                      {textArea.append(" "+thing.substring(thing.length()-2));
+                  }
+                  else
+                  {
+                      textArea.append(" 0"+thing);
+                  }
+               counter +=1;    
+              }
+          }
+      }
+      private static short fetchIntegerValue(byte [] memory, short address)
+        {
+
+            byte [] integerBytes = fetchBytePair(memory, address);
+
+            return bytesToInteger(integerBytes[ 0 ], integerBytes[ 1 ]);
+
+            }
+     private static void storeIntegerValue(
+            byte [] memory,
+            short address,
+            short dataValue
+            )
+        {
+
+            byte [] dataBytes = integerToBytes(dataValue);
+
+            memory[ address ] = dataBytes[ 0 ];
+            memory[ nextMemoryAddress(address) ] = dataBytes[ 1 ];
+
+            }
+     private static byte [] integerToBytes(short data)
+        {
+
+            byte [] dataBytes
+                = {((byte) (data >> 8 & 0xff)),
+                    ((byte) (data & 0xff))
+                    };
+
+            return dataBytes;
+
+            }
+      private class runAction implements ActionListener
+      {
+          
+           @Override
+           public void actionPerformed(ActionEvent event)
+           {
+               if (program != null) {
+
+                //
+                // Let accumulator, programCounter, and memory be the simulated hardware
+                //     components for the simulated machine
+                //
+
+                    byte [] memory = new byte[ numberOfMemoryBytes ];
+
+                boolean suppressPcIncrement;
+                boolean lastInstructionCausedHalt;
+
+                //
+                // Let memory[ 0 ... numberOfMemoryBytes-1 ] =
+                //     the bytes of the program whose execution is to be simulated, followed,
+                //     to the end of memory, 0-initialized bytes
+                //
+
+                    for (int loadAddress = 0; loadAddress < program.length; ++ loadAddress)
+                            //
+                            // Loop invariant:
+                            //     memory[ 0 ... loadAddres-1 ] has been assignment
+                            //         program[ 0 ... loadAddress-1 ]
+                            //
+                        memory[ loadAddress ] = program[ loadAddress ];
+
+                    for (int loadAddress = program.length;
+                            loadAddress < numberOfMemoryBytes;
+                            ++ loadAddress)
+                            //
+                            // Loop invariant:
+                            //     Each byte in
+                            //         memory[ program.length ... numberOfMemoryBytes-1 ] has
+                            //         been assigned 0
+                            //
+                        memory[ loadAddress ] = 0;
+
+                //
+                // Simulate the execution of the program whose binary encoding is found in
+                //     memory[ 0 ... program.length-1 ]
+                //
+
+                    do {
+                            //
+                            // Loop invariant:
+                            //     The simulation of the execution of all instructions whose
+                            //         address was previously contained in programCounter
+                            //         has been completed
+
+                        //
+                        // Let opcode = the operation code portion of the instruction stored
+                        //     at address programCounter
+                        // Let operand = the operand portion (if any) of the instruction
+                        //     stored at address programCounter
+                        //
+
+                            byte [] encodedInstruction
+                                = fetchBytePair(memory, programCounter);
+
+                            int [] decodedInstruction
+                                = VM252Utilities.decodedInstruction(encodedInstruction);
+                            int opcode = decodedInstruction[ 0 ];
+
+                            short operand
+                                = decodedInstruction.length == 2
+                                    ? ((short) (decodedInstruction[ 1 ]))
+                                    : 0;
+
+                        suppressPcIncrement = false;
+                        lastInstructionCausedHalt = false;
+
+                        //
+                        // Simulate execution of a VM252 instruction represented by opcode
+                        //     (and for instructions that have an operand, operand), altering
+                        //     accumulator, programCounter, and memory, as required
+                        // Let supressPcIncrement = true iff any kind of jump instruction was
+                        //     executed, a STOP instruction was executed, or a failed INPUT
+                        //     instruction was executed
+                        //
+
+                            switch (opcode) {
 
                                 case VM252Utilities.LOAD_OPCODE -> {
 
@@ -504,26 +756,18 @@ class ProgramFrame extends JFrame
                                         }
 
                                     }
-                               //not sure what the input. is just cant' find it when trying to compile the 
-                             /*  case VM252Utilities.INPUT_OPCODE -> {
-                                    for (System.out.print("INPUT: "), System.out.flush();
-                                                input.hasNext() && ! input.hasNextInt();
-                                                System.out.print("INPUT: "),
-                                                    System.out.flush())
-                                        
-                                            input.next();
-                                            System.out.println(
-                                                "INPUT: Bad integer value; try again"
-                                                );
-                                            System.out.flush();
-                                            
 
-                                        lastInstructionCausedHalt = ! input.hasNext();
-                                
+                               case VM252Utilities.INPUT_OPCODE -> {
+
+                                  
+                                    //add the input method that we have
+                                       int input_value =  intInput("Input an integer Value");
+
+                                        lastInstructionCausedHalt = false;
 
                                         if (lastInstructionCausedHalt) {
 
-                                            System.out.println(
+                                            textArea.append(
                                                 "EOF reading input;  machine halts"
                                                 );
                                             System.out.flush();
@@ -532,13 +776,22 @@ class ProgramFrame extends JFrame
 
                                             }
 
-                    
+                                    //
+                                    // Otherwise let accumulator = the next integer read
+                                    //     from the standard input stream
+                                    //
 
-                               }*/
+                                        else{
+
+                                            accumulator = ((short) input_value);
+                                            textArea.append("INPUT: "+accumulator+"\n");
+
+                                    }
+                               }
 
                                 case VM252Utilities.OUTPUT_OPCODE -> {
 
-                                    System.out.println("OUTPUT: " + accumulator);
+                                    textArea.append("OUTPUT: " + accumulator+"\n");
                                     System.out.flush();
 
                                     }
@@ -554,91 +807,50 @@ class ProgramFrame extends JFrame
                                     lastInstructionCausedHalt = true;
                                     suppressPcIncrement = true;
 
+                                    }
+
+                                }
+
+                        //
+                        // Increment the program counter to contain the address of the next
+                        //     instruction to execute, unless the program counter was already
+                        //     adjusted or the program is not continuing
+                        //
+
+                            if (! lastInstructionCausedHalt && ! suppressPcIncrement)
+
+                                programCounter
+                                    = ((short)
+                                        ((programCounter + instructionSize(opcode))
+                                            % numberOfMemoryBytes)
+                                            );
+
+                        } while (! lastInstructionCausedHalt);
 
                 }
-
-            }
-
-    
-            }
-
-        private byte[] integerToBytes(short dataValue) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-
-        private short fetchIntegerValue(byte[] memory, short operand) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-
-        private void storeIntegerValue(byte[] memory, short operand, short accumulator) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-            
-      }
-            
-      
-        
-      private class AaAction implements ActionListener
-      {
-            @Override
-        public void actionPerformed(ActionEvent event)
-            {
-                accumulator = ((short) intInput("What do you want to set the accumulator to"));
-                System.out.println(accumulator);
-            }
-      }
-      private class ApAction implements ActionListener
-      {
-      @Override
-        public void actionPerformed(ActionEvent event)
-            {
-                programCounter = ((short) intInput("What do you want to set the accumulator to"));
-                System.out.println(programCounter);
-            }
-      }
-      private class MbAction implements ActionListener
-      {
-          @Override
-          public void actionPerformed(ActionEvent event)
-          {
-              System.out.println(vm252utilities.VM252Utilities.encodedInstruction(opcode,operand));
-              outPutFrame();
-          
-          }
-      }
-      private class runAction implements ActionListener
-      {
-           @Override
-           public void actionPerformed(ActionEvent event)
-           {
-               VM252Architecture.runProgram(program);
            }
       
       }
       public void outPutFrame()
       {
-              PopupFactory popup = new PopupFactory();
-              JLabel thing = new JLabel("This is a popup menu");
-              f.setSize(400,400);
-              JButton close_window = new JButton("close Window");
-              JPanel panel = new JPanel();
-              panel.add(thing);
-              panel.add(close_window);
-              Popup po = popup.getPopup(f, panel, 400, 400);
+          textArea.setEditable(false);
+          JScrollPane scrollPane = new JScrollPane(textArea);
+          f.setSize(400,400);
+          if (f.isVisible())
+            {
+                textArea.setText("");
+                f.dispose();
+            }
+          else{
               f.setVisible(true);
-              f.add(panel);
-              close_Window testing = new close_Window();
-              close_window.addActionListener(testing); 
-      }
-      public JFrame f = new JFrame();
-          private class close_Window implements ActionListener
-      {
-          @Override
-          public void actionPerformed(ActionEvent event)
-          {
-              f.setVisible(false);
+              f.add(scrollPane);
           }
-      }
+          
+          
+          
+}
+      public JFrame f = new JFrame();
+         
 }
 
 
